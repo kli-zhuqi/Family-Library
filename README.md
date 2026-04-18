@@ -1,0 +1,98 @@
+# Family Library Management System
+
+A local-first family library app that ingests book-cover photos, stores structured metadata in SQLite, shows a dashboard, generates student-type recommendations, and syncs human-readable notes to Obsidian.
+
+## Architecture
+
+- **SQLite (`data/family_library.db`) is the source of truth** for ingestion state, deduplication, filtering, and APIs.
+- **Obsidian markdown notes are a synced layer** for family-friendly browsing and manual enrichment.
+- **Codex web upload-first ingestion** is supported: users upload images or zip batches, which are saved in `uploads/raw/` before ingestion.
+
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+## Run API
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Open API docs at `http://127.0.0.1:8000/docs`.
+
+## Run dashboard
+
+```bash
+streamlit run app/dashboard/streamlit_app.py
+```
+
+## Initial ingestion
+
+### Upload-first (Codex web flow)
+
+Use one of:
+- `POST /books/upload-batch` with multiple image files or zip file
+- `POST /books/ingest` with file uploads
+
+### Local folder flow (optional local runtime)
+
+```bash
+curl -X POST -F 'folder_path=C:\Users\kli\Downloads\Family Library' http://127.0.0.1:8000/books/ingest
+```
+
+## Add new books later
+
+Use:
+- Dashboard button **Upload New Books**
+- `POST /books/upload-new`
+
+This endpoint/function only processes unseen images (by image path), and updates existing books only when better data is available.
+Duplicate detection uses both metadata matching and `image_hash` (SHA-256), so re-uploading the same cover photo does not create a second book row.
+
+## Obsidian sync
+
+- Export all notes: `POST /obsidian/sync-all`
+- Export one note: `POST /obsidian/sync-book/{book_id}`
+- Import selected note edits back: `POST /obsidian/import-edits`
+
+Allowed import-back fields: `title`, `author`, `publisher`, `reading_level`, `subject_tags`, `manual_notes`.
+
+## Manual editing
+
+Use `PUT /books/{book_id}` to correct metadata and tags.
+
+## Testing
+
+```bash
+pytest
+```
+
+## Local real-image validation checklist
+
+```bash
+# 1) create venv + install
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# 2) run API
+uvicorn app.main:app --reload
+
+# 3) ingest uploaded files (from Swagger UI or curl multipart)
+# 4) re-upload exact same files and confirm duplicate counts do not increase
+# 5) upload a zip containing the same files and confirm duplicate handling is still correct
+# 6) sync all to Obsidian and verify one note per book_id
+# 7) edit note frontmatter title/author/publisher/reading_level/subject_tags/manual notes
+#    then import edits and verify disallowed fields (e.g. ocr_text) remain unchanged
+```
+
+## Known limitations
+
+- OCR quality depends on image quality and OCR engine availability.
+- If Tesseract is not installed, ingestion falls back to filename-based partial extraction.
+- Markdown import is intentionally conservative and does not overwrite raw OCR text.
+- Duplicate detection in v1 uses exact and fuzzy heuristics; ISBN/barcode support is a future enhancement.
