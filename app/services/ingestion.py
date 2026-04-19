@@ -33,19 +33,11 @@ def save_uploaded_files(uploaded_files: Iterable) -> list[str]:
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
     for upload in uploaded_files:
-        filename = Path(getattr(upload, "filename", getattr(upload, "name", "uploaded.bin"))).name
+        filename = Path(getattr(upload, "filename", "uploaded.bin")).name
         batch_dir = UPLOAD_RAW_DIR / timestamp
         batch_dir.mkdir(parents=True, exist_ok=True)
         target = batch_dir / filename
-        print(
-            f"[DEBUG] Saving file: {filename}, size={getattr(upload, 'size', 'unknown')}, "
-            f"target path={target}"
-        )
         content = upload.file.read() if hasattr(upload, "file") else upload.read()
-        if hasattr(upload, "file"):
-            upload.file.seek(0)
-        elif hasattr(upload, "seek"):
-            upload.seek(0)
         target.write_bytes(content)
 
         if target.suffix.lower() == ".zip":
@@ -173,10 +165,6 @@ def _process_images(session: Session, images: list[str], mode: str = "ingest") -
     run.records_failed = summary["records_failed"]
     run.notes = json.dumps(summary)
     session.commit()
-    print(
-        f"[DEBUG] files_scanned={summary['files_scanned']}, records_created={summary['records_created']}, "
-        f"records_skipped={summary['records_skipped']}, records_failed={summary['records_failed']}"
-    )
     return summary
 
 
@@ -186,11 +174,5 @@ def ingest_folder(session: Session, folder_path: str) -> dict:
 
 
 def upload_new_books(session: Session, folder_path: str | None = None, uploaded_files=None) -> dict:
-    print(f"[DEBUG] Uploaded files received: {uploaded_files}")
-    for file_obj in uploaded_files or []:
-        print(
-            f"[DEBUG] Name: {getattr(file_obj, 'name', getattr(file_obj, 'filename', 'unknown'))}, "
-            f"Size: {getattr(file_obj, 'size', 'unknown')}, Type: {getattr(file_obj, 'type', 'unknown')}"
-        )
     images = collect_ingestion_images(folder_path=folder_path, uploaded_files=uploaded_files)
     return _process_images(session, images, mode="upload_new")
