@@ -16,6 +16,8 @@ st.title("📚 Family Library Dashboard")
 
 DEFAULT_FOLDER = r"C:\Users\kli\Downloads\Family Library"
 DEFAULT_VAULT = r"C:\Users\kli\Documents\Obsidian\Family Library Vault"
+st.session_state.setdefault("last_ingestion_summary", None)
+st.session_state.setdefault("last_sync_summary", None)
 
 with SessionLocal() as db:
     books = db.query(Book).all()
@@ -36,21 +38,51 @@ with SessionLocal() as db:
     uploaded_images = st.file_uploader(
         "Upload cover images or zip batches", type=["jpg", "jpeg", "png", "webp", "zip"], accept_multiple_files=True
     )
+    st.caption(f"Files selected: {len(uploaded_images or [])}")
+    if uploaded_images:
+        st.write(
+            [
+                {"name": file_obj.name, "size_bytes": file_obj.size, "type": file_obj.type}
+                for file_obj in uploaded_images
+            ]
+        )
 
     if st.button("Ingest Uploaded Files"):
-        with SessionLocal() as ingest_db:
-            summary = upload_new_books(ingest_db, uploaded_files=uploaded_images)
-        st.success(summary)
+        if not uploaded_images:
+            st.warning("Please upload at least one image or zip file before ingestion.")
+        else:
+            with SessionLocal() as ingest_db:
+                summary = upload_new_books(ingest_db, uploaded_files=uploaded_images)
+            st.session_state["last_ingestion_summary"] = summary
+            st.success("Ingestion completed.")
+            st.json(summary)
+            st.rerun()
 
     if st.button("Upload New Books"):
-        with SessionLocal() as ingest_db:
-            summary = upload_new_books(ingest_db, folder_path=folder_path, uploaded_files=uploaded_images)
-        st.success(summary)
+        if not uploaded_images and not folder_path:
+            st.warning("Provide uploaded files or a local folder path.")
+        else:
+            with SessionLocal() as ingest_db:
+                summary = upload_new_books(ingest_db, folder_path=folder_path, uploaded_files=uploaded_images)
+            st.session_state["last_ingestion_summary"] = summary
+            st.success("Upload-new run completed.")
+            st.json(summary)
+            st.rerun()
 
     if st.button("Sync All to Obsidian"):
         with SessionLocal() as sync_db:
             summary = sync_all_books_to_obsidian(sync_db, vault_path)
-        st.success(summary)
+        st.session_state["last_sync_summary"] = summary
+        st.success("Obsidian sync completed.")
+        st.json(summary)
+        st.rerun()
+
+    if st.session_state["last_ingestion_summary"]:
+        st.info("Last ingestion summary")
+        st.json(st.session_state["last_ingestion_summary"])
+    if st.session_state["last_sync_summary"]:
+        st.info("Last Obsidian sync summary")
+        st.json(st.session_state["last_sync_summary"])
 
     st.header("Book Table")
     query = st.text_input("Search by title/author/publisher")

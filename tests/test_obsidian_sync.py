@@ -11,7 +11,7 @@ def test_generate_obsidian_note(tmp_path):
         book = Book(
             title="Test Book",
             author="Author",
-            image_path="/tmp/example.jpg",
+            image_path=str(tmp_path / "example.jpg"),
             ingestion_status="success",
             subject_tags=json.dumps(["general"]),
             recommended_student_types=json.dumps(["general_family_reading"]),
