@@ -1,0 +1,13 @@
+start api:
+
+uvicorn app.main:app --reload
+
+
+in another powershell:
+
+cd C:\Users\kli\Downloads\Family-Library
+.venv\Scripts\Activate.ps1
+
+$env:PYTHONPATH = $PWD
+streamlit run app/dashboard/streamlit_app.py
+
