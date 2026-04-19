@@ -10,6 +10,7 @@ from app.database import SessionLocal
 from app.models import Book
 from app.services.ingestion import upload_new_books
 from app.services.obsidian_sync import sync_all_books_to_obsidian
+from app.utils.image_utils import is_loadable_image
 
 st.set_page_config(page_title="Family Library Dashboard", layout="wide")
 st.title("📚 Family Library Dashboard")
@@ -115,15 +116,18 @@ with SessionLocal() as db:
     st.dataframe(pd.DataFrame(data), use_container_width=True)
 
     st.header("Book Detail")
-    selected_id = st.number_input("Select Book ID", min_value=1, step=1, value=1)
+    default_book_id = books[0].id if books else 1
+    selected_id = st.number_input("Select Book ID", min_value=1, step=1, value=default_book_id)
     selected = next((b for b in books if b.id == selected_id), None)
     if selected:
         c_left, c_right = st.columns([1, 2])
         with c_left:
-            if Path(selected.image_path).exists():
+            selected_path = Path(selected.image_path)
+            if is_loadable_image(selected_path):
                 st.image(selected.image_path, use_container_width=True)
             else:
-                st.caption("Image not found on current runtime.")
+                st.warning("Image preview unavailable: file is missing or not a valid image.")
+                st.caption(f"Stored path: {selected.image_path}")
         with c_right:
             st.write({
                 "title": selected.title,

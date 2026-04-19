@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.services.ingestion import normalize_book_record, save_uploaded_files, scan_folder_for_book_images
+from app.utils.image_utils import is_loadable_image
 
 
 def test_scan_folder_for_images(tmp_path: Path):
@@ -56,3 +57,9 @@ def test_upload_new_books_accepts_iterable_uploads(tmp_path: Path, monkeypatch):
         summary = upload_new_books(session, uploaded_files=uploads)
 
     assert summary["files_scanned"] == 1
+
+
+def test_is_loadable_image_rejects_invalid_bytes(tmp_path: Path):
+    fake_image = tmp_path / "fake.jpg"
+    fake_image.write_bytes(b"not-an-image")
+    assert is_loadable_image(fake_image) is False
