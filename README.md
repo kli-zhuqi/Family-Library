@@ -10,9 +10,35 @@ A local-first family library app that ingests book-cover photos, stores structur
 
 ## Setup
 
+### Windows PowerShell
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+py -m pip install -r requirements.txt
+```
+
+Or run the Windows setup helper, then activate the environment when it finishes:
+
+```powershell
+.\scripts\setup_windows.ps1
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation scripts, run this once for your user and then activate again:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+.\.venv\Scripts\Activate.ps1
+```
+
+> **PowerShell note:** do not run `source .venv/bin/activate` in PowerShell. That command only works in macOS/Linux shells or Git Bash. In PowerShell, activate the environment with `.\.venv\Scripts\Activate.ps1`.
+
+### macOS/Linux/Git Bash
+
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -65,6 +91,12 @@ docker compose -f docker-compose.deeptutor.yml up
 ```
 
 Open `http://127.0.0.1:3782`. The compose file mounts `./data/deeptutor` into the container so model settings, API keys, Knowledge Bases, memory, logs, and exported Family Library sources persist across restarts.
+
+If Windows shows `failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine`, Docker Desktop is not running or is not installed. Start Docker Desktop, wait until it says **Docker Desktop is running**, then retry the compose command. You can check from PowerShell with:
+
+```powershell
+.\scripts\check_docker_windows.ps1
+```
 
 If you run Ollama, LM Studio, llama.cpp, vLLM, or Lemonade on your host, use `host.docker.internal` in DeepTutor's **Settings → Models** because `localhost` inside Docker points at the container.
 
