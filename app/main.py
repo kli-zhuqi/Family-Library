@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.database import Base, engine, get_db
+from app.services.deeptutor_export import export_all_books_to_deeptutor
 from app.services.ingestion import collect_ingestion_images, ingest_folder, upload_new_books
 from app.services.obsidian_sync import import_obsidian_edits, sync_all_books_to_obsidian, sync_book_to_obsidian
 
@@ -141,3 +142,8 @@ def obsidian_status(db: Session = Depends(get_db)):
     synced = db.query(func.count(models.Book.id)).filter(models.Book.obsidian_note_path.is_not(None)).scalar() or 0
     last_sync = db.query(func.max(models.Book.obsidian_last_synced_at)).scalar()
     return {"total_books": total, "synced_books": synced, "last_sync": last_sync}
+
+
+@app.post("/deeptutor/export-library")
+def export_deeptutor_library(payload: schemas.DeepTutorExportRequest, db: Session = Depends(get_db)):
+    return export_all_books_to_deeptutor(db, payload.workspace_path)

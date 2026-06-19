@@ -53,6 +53,39 @@ Use:
 This endpoint/function only processes unseen images (by image path), and updates existing books only when better data is available.
 Duplicate detection uses both metadata matching and `image_hash` (SHA-256), so re-uploading the same cover photo does not create a second book row.
 
+
+## DeepTutor local app
+
+This repo can launch the upstream DeepTutor web app locally and export Family Library records as Markdown sources that DeepTutor can import into a Knowledge Base. DeepTutor's current recommended Docker setup maps both the web UI (`3782`) and FastAPI backend (`8001`) ports and persists settings/workspace files under `/app/data`.
+
+### Start DeepTutor with Docker
+
+```bash
+docker compose -f docker-compose.deeptutor.yml up
+```
+
+Open `http://127.0.0.1:3782`. The compose file mounts `./data/deeptutor` into the container so model settings, API keys, Knowledge Bases, memory, logs, and exported Family Library sources persist across restarts.
+
+If you run Ollama, LM Studio, llama.cpp, vLLM, or Lemonade on your host, use `host.docker.internal` in DeepTutor's **Settings → Models** because `localhost` inside Docker points at the container.
+
+### Export this library into DeepTutor
+
+Use the API endpoint:
+
+```bash
+curl -X POST http://127.0.0.1:8000/deeptutor/export-library \
+  -H 'Content-Type: application/json' \
+  -d '{"workspace_path":"data/deeptutor"}'
+```
+
+Or run the helper script directly:
+
+```bash
+python scripts/export_to_deeptutor.py --workspace data/deeptutor
+```
+
+Both flows write Markdown files to `data/deeptutor/knowledge_sources/family_library/`. In DeepTutor, create or update a Knowledge Base from those Markdown files so Chat, Solve, Quiz, Research, and Co-Writer can use your family library metadata and OCR text as learning context.
+
 ## Obsidian sync
 
 - Export all notes: `POST /obsidian/sync-all`
