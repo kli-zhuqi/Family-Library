@@ -43,5 +43,9 @@ class ObsidianRequest(BaseModel):
     vault_path: str = Field(..., description="Obsidian vault path")
 
 
+class DeepTutorExportRequest(BaseModel):
+    workspace_path: str = Field(default="data/deeptutor", description="Local DeepTutor workspace/data path")
+
+
 class GenericSummary(BaseModel):
     summary: dict[str, Any]
